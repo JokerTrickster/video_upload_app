@@ -1,0 +1,50 @@
+{
+  "media-backup-system": {
+    "phase": "do",
+    "startedAt": "2026-03-24T15:39:00Z",
+    "doStartedAt": "2026-03-24T17:35:00Z",
+    "matchRate": 0,
+    "iterationCount": 0,
+    "tasks": [
+      {
+        "id": "plan-media-backup-system",
+        "title": "[Plan] media-backup-system",
+        "status": "completed",
+        "completedAt": "2026-03-24T15:39:00Z"
+      },
+      {
+        "id": "design-media-backup-system",
+        "title": "[Design] media-backup-system",
+        "status": "completed",
+        "completedAt": "2026-03-24T17:30:00Z"
+      },
+      {
+        "id": "do-media-backup-system",
+        "title": "[Do] media-backup-system",
+        "status": "in_progress",
+        "startedAt": "2026-03-24T17:35:00Z"
+      }
+    ],
+    "documents": {
+      "plan": "docs/01-plan/features/media-backup-system.plan.md",
+      "design": "docs/02-design/features/media-backup-system.design.md",
+      "analysis": null,
+      "report": null
+    }
+  },
+  "youtube-auth-api": {
+    "phase": "archived",
+    "matchRate": 92,
+    "iterationCount": 0,
+    "startedAt": "2026-03-24T16:00:00Z",
+    "completedAt": "2026-03-24T19:00:00Z",
+    "archivedAt": "2026-03-24T17:22:00Z",
+    "archivedTo": "docs/archive/2026-03/youtube-auth-api/",
+    "summary": {
+      "implementation": "100% core functionality complete",
+      "testing": "0% - scheduled for Day 7-8",
+      "documentation": "85% - missing Swagger spec",
+      "nextSteps": "Integration tests and test coverage"
+    }
+  }
+}
