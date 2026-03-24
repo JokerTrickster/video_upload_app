@@ -1,0 +1,85 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Claude Code settings (local development)
+.claude/
+
+# Build artifacts
+backend/api
+backend/bin/
+backend/*.exe
+backend/*.dll
+backend/*.so
+backend/*.dylib
+
+# Test binaries
+*.test
+*.out
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage reports
+coverage.txt
+coverage.html
+*.cover
+
+# Flutter/Dart (for future mobile app)
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/.packages
+mobile/build/
+mobile/.pub-cache/
+mobile/.pub/
+
+# iOS
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+mobile/ios/Flutter/Flutter.framework
+mobile/ios/Flutter/Flutter.podspec
+
+# Android
+mobile/android/.gradle/
+mobile/android/captures/
+mobile/android/local.properties
+mobile/android/.idea/
+mobile/android/app/debug/
+mobile/android/app/release/
+
+# Redis dump
+dump.rdb
+
+# Compiled binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
