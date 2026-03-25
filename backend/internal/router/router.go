@@ -14,6 +14,7 @@ import (
 func SetupRouter(
 	cfg *config.Config,
 	authHandler *handler.AuthHandler,
+	mediaHandler *handler.MediaHandler,
 	authService service.AuthService,
 	redisClient *redis.Client,
 ) *gin.Engine {
@@ -67,10 +68,20 @@ func SetupRouter(
 			protected.GET("/auth/me", authHandler.GetCurrentUser)
 			protected.POST("/auth/logout", authHandler.Logout)
 
-			// Future routes will be added here:
-			// - Video upload routes
-			// - Video management routes
-			// - Channel management routes
+			// Media upload routes
+			media := protected.Group("/media")
+			{
+				// Upload session management
+				media.POST("/upload/initiate", mediaHandler.InitiateUpload)
+				media.POST("/upload/video", mediaHandler.UploadVideo)
+				media.GET("/upload/status/:session_id", mediaHandler.GetUploadSessionStatus)
+				media.POST("/upload/complete", mediaHandler.CompleteUploadSession)
+
+				// Media asset management
+				media.GET("/list", mediaHandler.ListMediaAssets)
+				media.GET("/:asset_id", mediaHandler.GetMediaAsset)
+				media.DELETE("/:asset_id", mediaHandler.DeleteMediaAsset)
+			}
 		}
 	}
 

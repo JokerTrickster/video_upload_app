@@ -14,6 +14,7 @@ import (
 	"github.com/JokerTrickster/video-upload-backend/internal/pkg/database"
 	"github.com/JokerTrickster/video-upload-backend/internal/pkg/logger"
 	redisUtil "github.com/JokerTrickster/video-upload-backend/internal/pkg/redis"
+	"github.com/JokerTrickster/video-upload-backend/internal/pkg/youtube"
 	"github.com/JokerTrickster/video-upload-backend/internal/repository"
 	"github.com/JokerTrickster/video-upload-backend/internal/router"
 	"github.com/JokerTrickster/video-upload-backend/internal/service"
@@ -64,20 +65,27 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	tokenRepo := repository.NewTokenRepository(db)
+	mediaRepo := repository.NewMediaRepository(db)
+	sessionRepo := repository.NewSessionRepository(db)
 	logger.Info("Repositories initialized")
 
 	// Initialize services
 	tokenService := service.NewTokenService(redisClient, cfg)
 	youtubeService := service.NewYouTubeService()
 	authService := service.NewAuthService(userRepo, tokenRepo, tokenService, youtubeService, cfg)
+
+	// Initialize YouTube client for upload service
+	youtubeClient := youtube.NewClient()
+	uploadService := service.NewUploadService(mediaRepo, sessionRepo, youtubeClient)
 	logger.Info("Services initialized")
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
+	mediaHandler := handler.NewMediaHandler(uploadService, tokenService, tokenRepo)
 	logger.Info("Handlers initialized")
 
 	// Setup router
-	r := router.SetupRouter(cfg, authHandler, authService, redisClient)
+	r := router.SetupRouter(cfg, authHandler, mediaHandler, authService, redisClient)
 	logger.Info("Router configured")
 
 	// Create HTTP server
