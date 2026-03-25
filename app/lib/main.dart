@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'core/router/app_router.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'features/auth/presentation/auth_provider.dart';
+import 'features/media/data/media_repository.dart';
+import 'features/media/presentation/media_provider.dart';
+import 'features/upload/data/upload_repository.dart';
+import 'features/upload/presentation/upload_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -12,8 +18,24 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Provider<ApiClient>(
-      create: (_) => ApiClient(),
+    final apiClient = ApiClient();
+    final authRepository = AuthRepository(apiClient);
+    final mediaRepository = MediaRepository(apiClient);
+    final uploadRepository = UploadRepository(apiClient);
+
+    return MultiProvider(
+      providers: [
+        Provider<ApiClient>.value(value: apiClient),
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(authRepository, apiClient),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => MediaProvider(mediaRepository),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => UploadProvider(uploadRepository),
+        ),
+      ],
       child: MaterialApp.router(
         title: 'Video Upload App',
         debugShowCheckedModeBanner: false,
