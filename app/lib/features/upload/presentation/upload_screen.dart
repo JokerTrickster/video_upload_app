@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../../core/utils/responsive.dart';
 import 'upload_provider.dart';
 
 class UploadScreen extends StatelessWidget {
@@ -31,11 +32,13 @@ class UploadScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Upload Videos'),
+        title: Text('Upload Videos', style: TextStyle(fontSize: r.titleMedium)),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: Icon(Icons.arrow_back, size: r.iconMedium),
           onPressed: () => context.go('/media'),
         ),
       ),
@@ -43,7 +46,6 @@ class UploadScreen extends StatelessWidget {
         builder: (context, upload, _) {
           return Column(
             children: [
-              // File list
               Expanded(
                 child: upload.files.isEmpty
                     ? Center(
@@ -51,18 +53,18 @@ class UploadScreen extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(Icons.video_call_outlined,
-                                size: 64, color: Colors.grey[400]),
-                            const SizedBox(height: 16),
+                                size: r.iconXLarge, color: Colors.grey[400]),
+                            SizedBox(height: r.h(16)),
                             Text('No files selected',
-                                style: TextStyle(
-                                    fontSize: 18, color: Colors.grey[600])),
-                            const SizedBox(height: 8),
-                            const Text('Tap + to select videos'),
+                                style: TextStyle(fontSize: r.titleMedium, color: Colors.grey[600])),
+                            SizedBox(height: r.h(8)),
+                            Text('Tap + to select videos',
+                                style: TextStyle(fontSize: r.bodyMedium)),
                           ],
                         ),
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(r.horizontalPadding),
                         itemCount: upload.files.length,
                         itemBuilder: (context, index) {
                           final file = upload.files[index];
@@ -76,74 +78,77 @@ class UploadScreen extends StatelessWidget {
                       ),
               ),
 
-              // Error message
               if (upload.error != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    upload.error!,
-                    style: const TextStyle(color: Colors.red),
-                  ),
+                  padding: EdgeInsets.symmetric(horizontal: r.horizontalPadding),
+                  child: Text(upload.error!,
+                      style: TextStyle(color: Colors.red, fontSize: r.bodySmall)),
                 ),
 
-              // Progress bar (during upload)
               if (upload.isUploading)
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(r.horizontalPadding),
                   child: Column(
                     children: [
-                      LinearProgressIndicator(
-                        value: upload.overallProgress / 100,
-                      ),
-                      const SizedBox(height: 8),
+                      LinearProgressIndicator(value: upload.overallProgress / 100),
+                      SizedBox(height: r.h(8)),
                       Text(
                         '${upload.completedCount}/${upload.files.length} completed '
                         '(${upload.overallProgress.toStringAsFixed(0)}%)',
+                        style: TextStyle(fontSize: r.bodyMedium),
                       ),
                     ],
                   ),
                 ),
 
-              // Action buttons
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(r.horizontalPadding),
                   child: Row(
                     children: [
                       if (!upload.isUploading)
                         Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _pickVideos(context),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Add Files'),
+                          child: SizedBox(
+                            height: r.h(48).clamp(40.0, 56.0),
+                            child: OutlinedButton.icon(
+                              onPressed: () => _pickVideos(context),
+                              icon: Icon(Icons.add, size: r.iconSmall),
+                              label: Text('Add Files', style: TextStyle(fontSize: r.bodyMedium)),
+                            ),
                           ),
                         ),
                       if (!upload.isUploading && upload.files.isNotEmpty)
-                        const SizedBox(width: 12),
+                        SizedBox(width: r.w(12)),
                       if (upload.files.isNotEmpty)
                         Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: upload.isUploading
-                                ? () => upload.cancelUpload()
-                                : () async {
-                                    await upload.startUpload();
-                                    if (context.mounted &&
-                                        !upload.isUploading &&
-                                        upload.failedCount == 0) {
-                                      upload.clearFiles();
-                                      context.go('/media');
-                                    }
-                                  },
-                            icon: Icon(upload.isUploading
-                                ? Icons.cancel
-                                : Icons.cloud_upload),
-                            label: Text(
-                                upload.isUploading ? 'Cancel' : 'Start Upload'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: upload.isUploading
-                                  ? Colors.red
-                                  : Theme.of(context).colorScheme.primary,
-                              foregroundColor: Colors.white,
+                          child: SizedBox(
+                            height: r.h(48).clamp(40.0, 56.0),
+                            child: ElevatedButton.icon(
+                              onPressed: upload.isUploading
+                                  ? () => upload.cancelUpload()
+                                  : () async {
+                                      await upload.startUpload();
+                                      if (context.mounted &&
+                                          !upload.isUploading &&
+                                          upload.failedCount == 0) {
+                                        upload.clearFiles();
+                                        context.go('/media');
+                                      }
+                                    },
+                              icon: Icon(
+                                upload.isUploading ? Icons.cancel : Icons.cloud_upload,
+                                size: r.iconSmall,
+                              ),
+                              label: Text(
+                                upload.isUploading ? 'Cancel' : 'Start Upload',
+                                style: TextStyle(fontSize: r.bodyMedium),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: upload.isUploading
+                                    ? Colors.red
+                                    : Theme.of(context).colorScheme.primary,
+                                foregroundColor: Colors.white,
+                              ),
                             ),
                           ),
                         ),
@@ -167,66 +172,70 @@ class _UploadFileCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: _buildStatusIcon(),
-        title: Text(
-          file.filename,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      margin: EdgeInsets.only(bottom: r.h(8)),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: r.w(12), vertical: r.h(8)),
+        child: Row(
           children: [
-            Text(_formatSize(file.size)),
-            if (file.status == 'uploading')
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: LinearProgressIndicator(
-                  value: file.progress / 100,
-                ),
+            _buildStatusIcon(r),
+            SizedBox(width: r.w(12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(file.filename,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: r.bodyLarge)),
+                  SizedBox(height: r.h(2)),
+                  Text(_formatSize(file.size),
+                      style: TextStyle(fontSize: r.bodySmall, color: Colors.grey[600])),
+                  if (file.status == 'uploading')
+                    Padding(
+                      padding: EdgeInsets.only(top: r.h(4)),
+                      child: LinearProgressIndicator(value: file.progress / 100),
+                    ),
+                  if (file.error != null)
+                    Text(file.error!,
+                        style: TextStyle(color: Colors.red, fontSize: r.bodySmall)),
+                ],
               ),
-            if (file.error != null)
-              Text(file.error!,
-                  style: const TextStyle(color: Colors.red, fontSize: 12)),
+            ),
+            if (onRemove != null)
+              IconButton(
+                icon: Icon(Icons.close, size: r.iconSmall),
+                onPressed: onRemove,
+              ),
           ],
         ),
-        trailing: onRemove != null
-            ? IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: onRemove,
-              )
-            : null,
       ),
     );
   }
 
-  Widget _buildStatusIcon() {
+  Widget _buildStatusIcon(Responsive r) {
+    final size = r.iconLarge;
     switch (file.status) {
       case 'completed':
-        return const Icon(Icons.check_circle, color: Colors.green, size: 32);
+        return Icon(Icons.check_circle, color: Colors.green, size: size);
       case 'failed':
-        return const Icon(Icons.error, color: Colors.red, size: 32);
+        return Icon(Icons.error, color: Colors.red, size: size);
       case 'uploading':
-        return const SizedBox(
-          width: 32,
-          height: 32,
-          child: CircularProgressIndicator(strokeWidth: 3),
+        return SizedBox(
+          width: size, height: size,
+          child: const CircularProgressIndicator(strokeWidth: 3),
         );
       default:
-        return const Icon(Icons.video_file, color: Colors.grey, size: 32);
+        return Icon(Icons.video_file, color: Colors.grey, size: size);
     }
   }
 
   String _formatSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    }
-    if (bytes < 1024 * 1024 * 1024) {
-      return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-    }
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
+    if (bytes < 1024 * 1024 * 1024) return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
   }
 }

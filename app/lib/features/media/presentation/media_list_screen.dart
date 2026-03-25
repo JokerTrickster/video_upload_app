@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../features/auth/presentation/auth_provider.dart';
 import '../../../shared/models/media_asset_model.dart';
 import 'media_provider.dart';
@@ -39,27 +40,25 @@ class _MediaListScreenState extends State<MediaListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Media'),
+        title: Text('My Media', style: TextStyle(fontSize: r.titleMedium)),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, size: r.iconMedium),
             onSelected: (value) {
               final provider = context.read<MediaProvider>();
               switch (value) {
                 case 'all':
                   provider.setFilter();
-                  break;
                 case 'completed':
                   provider.setFilter(syncStatus: 'COMPLETED');
-                  break;
                 case 'failed':
                   provider.setFilter(syncStatus: 'FAILED');
-                  break;
                 case 'uploading':
                   provider.setFilter(syncStatus: 'UPLOADING');
-                  break;
               }
             },
             itemBuilder: (_) => [
@@ -70,7 +69,7 @@ class _MediaListScreenState extends State<MediaListScreen> {
             ],
           ),
           IconButton(
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout, size: r.iconMedium),
             onPressed: () async {
               await context.read<AuthProvider>().logout();
               if (context.mounted) context.go('/login');
@@ -86,16 +85,19 @@ class _MediaListScreenState extends State<MediaListScreen> {
 
           if (media.error != null && media.assets.isEmpty) {
             return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(media.error!, style: const TextStyle(color: Colors.red)),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => media.loadAssets(refresh: true),
-                    child: const Text('Retry'),
-                  ),
-                ],
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: r.horizontalPadding),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(media.error!, style: TextStyle(color: Colors.red, fontSize: r.bodyMedium)),
+                    SizedBox(height: r.h(16)),
+                    ElevatedButton(
+                      onPressed: () => media.loadAssets(refresh: true),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -106,13 +108,13 @@ class _MediaListScreenState extends State<MediaListScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.video_library_outlined,
-                      size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
+                      size: r.iconXLarge, color: Colors.grey[400]),
+                  SizedBox(height: r.h(16)),
                   Text('No media yet',
-                      style: TextStyle(
-                          fontSize: 18, color: Colors.grey[600])),
-                  const SizedBox(height: 8),
-                  const Text('Upload your first video'),
+                      style: TextStyle(fontSize: r.titleMedium, color: Colors.grey[600])),
+                  SizedBox(height: r.h(8)),
+                  Text('Upload your first video',
+                      style: TextStyle(fontSize: r.bodyMedium)),
                 ],
               ),
             );
@@ -122,14 +124,14 @@ class _MediaListScreenState extends State<MediaListScreen> {
             onRefresh: () => media.loadAssets(refresh: true),
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(r.horizontalPadding),
               itemCount: media.assets.length + (media.hasMore ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == media.assets.length) {
-                  return const Center(
+                  return Center(
                     child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: CircularProgressIndicator(),
+                      padding: EdgeInsets.all(r.h(16)),
+                      child: const CircularProgressIndicator(),
                     ),
                   );
                 }
@@ -145,8 +147,8 @@ class _MediaListScreenState extends State<MediaListScreen> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.go('/upload'),
-        icon: const Icon(Icons.upload),
-        label: const Text('Upload'),
+        icon: Icon(Icons.upload, size: r.iconMedium),
+        label: Text('Upload', style: TextStyle(fontSize: r.bodyMedium)),
       ),
     );
   }
@@ -159,31 +161,53 @@ class _MediaCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = context.responsive;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: ListTile(
-        leading: _buildStatusIcon(),
-        title: Text(
-          asset.originalFilename,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+      margin: EdgeInsets.only(bottom: r.h(12)),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: r.w(12),
+          vertical: r.h(8),
         ),
-        subtitle: Text(
-          '${asset.fileSizeFormatted} - ${asset.syncStatus}',
-          style: TextStyle(
-            color: asset.isFailed ? Colors.red : Colors.grey[600],
-          ),
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'delete') {
-              _confirmDelete(context);
-            }
-          },
-          itemBuilder: (_) => [
-            const PopupMenuItem(
-              value: 'delete',
-              child: Text('Delete', style: TextStyle(color: Colors.red)),
+        child: Row(
+          children: [
+            _buildStatusIcon(r),
+            SizedBox(width: r.w(12)),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    asset.originalFilename,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: r.bodyLarge, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: r.h(4)),
+                  Text(
+                    '${asset.fileSizeFormatted} - ${asset.syncStatus}',
+                    style: TextStyle(
+                      fontSize: r.bodySmall,
+                      color: asset.isFailed ? Colors.red : Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuButton<String>(
+              iconSize: r.iconMedium,
+              onSelected: (value) {
+                if (value == 'delete') {
+                  _confirmDelete(context);
+                }
+              },
+              itemBuilder: (_) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Delete', style: TextStyle(color: Colors.red)),
+                ),
+              ],
             ),
           ],
         ),
@@ -191,35 +215,39 @@ class _MediaCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusIcon() {
+  Widget _buildStatusIcon(Responsive r) {
+    final size = r.iconLarge;
+    final iconSize = r.iconSmall;
+
     if (asset.isCompleted) {
-      return const CircleAvatar(
+      return CircleAvatar(
+        radius: size / 2,
         backgroundColor: Colors.green,
-        child: Icon(Icons.check, color: Colors.white, size: 20),
+        child: Icon(Icons.check, color: Colors.white, size: iconSize),
       );
     }
     if (asset.isFailed) {
-      return const CircleAvatar(
+      return CircleAvatar(
+        radius: size / 2,
         backgroundColor: Colors.red,
-        child: Icon(Icons.error, color: Colors.white, size: 20),
+        child: Icon(Icons.error, color: Colors.white, size: iconSize),
       );
     }
     if (asset.isUploading) {
-      return const CircleAvatar(
+      return CircleAvatar(
+        radius: size / 2,
         backgroundColor: Colors.blue,
         child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Colors.white,
-          ),
+          width: iconSize,
+          height: iconSize,
+          child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
         ),
       );
     }
     return CircleAvatar(
+      radius: size / 2,
       backgroundColor: Colors.grey[300],
-      child: const Icon(Icons.video_file, color: Colors.grey, size: 20),
+      child: Icon(Icons.video_file, color: Colors.grey, size: iconSize),
     );
   }
 
