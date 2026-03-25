@@ -77,7 +77,7 @@ func main() {
 
 	// Initialize YouTube client for upload service
 	youtubeClient := youtube.NewClient()
-	uploadService := service.NewUploadService(mediaRepo, sessionRepo, youtubeClient)
+	uploadService := service.NewUploadService(mediaRepo, sessionRepo, tokenRepo, tokenService, youtubeClient)
 	queueService := service.NewQueueService(queueRepo, mediaRepo, tokenRepo, tokenService, youtubeClient)
 	logger.Info("Services initialized")
 
@@ -90,7 +90,6 @@ func main() {
 	// Start upload queue scheduler (processes every hour)
 	scheduler := service.NewScheduler(queueService, 1*time.Hour)
 	scheduler.Start()
-	defer scheduler.Stop()
 
 	// Setup router
 	r := router.SetupRouter(cfg, authHandler, mediaHandler, queueHandler, authService, redisClient)
@@ -126,8 +125,12 @@ func main() {
 
 	logger.Info("Shutting down server...")
 
-	// Graceful shutdown with 5 second timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Stop scheduler first to prevent new uploads
+	scheduler.Stop()
+	logger.Info("Upload queue scheduler stopped")
+
+	// Graceful shutdown — allow up to 30s for in-progress requests to complete
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {

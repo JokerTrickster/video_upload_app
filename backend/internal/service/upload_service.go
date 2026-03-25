@@ -95,8 +95,10 @@ type MediaAssetList struct {
 
 // uploadService implements UploadService
 type uploadService struct {
-	mediaRepo   repository.MediaRepository
-	sessionRepo repository.SessionRepository
+	mediaRepo     repository.MediaRepository
+	sessionRepo   repository.SessionRepository
+	tokenRepo     repository.TokenRepository
+	tokenService  TokenService
 	youtubeClient youtube.Client
 }
 
@@ -104,11 +106,15 @@ type uploadService struct {
 func NewUploadService(
 	mediaRepo repository.MediaRepository,
 	sessionRepo repository.SessionRepository,
+	tokenRepo repository.TokenRepository,
+	tokenService TokenService,
 	youtubeClient youtube.Client,
 ) UploadService {
 	return &uploadService{
-		mediaRepo:   mediaRepo,
-		sessionRepo: sessionRepo,
+		mediaRepo:     mediaRepo,
+		sessionRepo:   sessionRepo,
+		tokenRepo:     tokenRepo,
+		tokenService:  tokenService,
 		youtubeClient: youtubeClient,
 	}
 }
@@ -381,9 +387,13 @@ func (s *uploadService) DeleteMediaAsset(ctx context.Context, assetID uuid.UUID,
 
 	// Delete from YouTube if requested and video ID exists
 	if deleteFromYouTube && asset.YouTubeVideoID != nil && *asset.YouTubeVideoID != "" {
-		// Note: This would require access token, which we don't have here
-		// In a real implementation, you'd need to get the user's access token
-		// For now, we just delete the record
+		token, err := s.tokenRepo.FindByUserID(ctx, asset.UserID.String())
+		if err == nil && !token.IsExpired() {
+			accessToken, err := s.tokenService.DecryptToken(ctx, token.EncryptedAccessToken)
+			if err == nil {
+				_ = s.youtubeClient.DeleteVideo(ctx, accessToken, *asset.YouTubeVideoID)
+			}
+		}
 	}
 
 	// Delete from database

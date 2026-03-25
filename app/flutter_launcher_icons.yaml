@@ -1,0 +1,9 @@
+# Run: flutter pub run flutter_launcher_icons
+# Requires: assets/icon.png (1024x1024 recommended)
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon.png"
+  adaptive_icon_background: "#2196F3"
+  adaptive_icon_foreground: "assets/icon.png"
+  min_sdk_android: 21

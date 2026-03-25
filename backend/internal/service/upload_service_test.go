@@ -148,6 +148,74 @@ func (m *MockYouTubeClient) DeleteVideo(ctx context.Context, accessToken string,
 	return args.Error(0)
 }
 
+// MockTokenRepo implements repository.TokenRepository for tests
+type MockTokenRepo struct {
+	mock.Mock
+}
+
+func (m *MockTokenRepo) Create(ctx context.Context, token *domain.Token) error {
+	args := m.Called(ctx, token)
+	return args.Error(0)
+}
+
+func (m *MockTokenRepo) FindByUserID(ctx context.Context, userID string) (*domain.Token, error) {
+	args := m.Called(ctx, userID)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domain.Token), args.Error(1)
+}
+
+func (m *MockTokenRepo) Update(ctx context.Context, token *domain.Token) error {
+	args := m.Called(ctx, token)
+	return args.Error(0)
+}
+
+func (m *MockTokenRepo) Delete(ctx context.Context, userID string) error {
+	args := m.Called(ctx, userID)
+	return args.Error(0)
+}
+
+// MockTokenSvc implements TokenService for tests
+type MockTokenSvc struct {
+	mock.Mock
+}
+
+func (m *MockTokenSvc) EncryptToken(ctx context.Context, plainText string) (string, error) {
+	args := m.Called(ctx, plainText)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockTokenSvc) DecryptToken(ctx context.Context, cipherText string) (string, error) {
+	args := m.Called(ctx, cipherText)
+	return args.String(0), args.Error(1)
+}
+
+func (m *MockTokenSvc) AddToBlacklist(ctx context.Context, token string, expirySeconds int64) error {
+	args := m.Called(ctx, token, expirySeconds)
+	return args.Error(0)
+}
+
+func (m *MockTokenSvc) IsBlacklisted(ctx context.Context, token string) (bool, error) {
+	args := m.Called(ctx, token)
+	return args.Bool(0), args.Error(1)
+}
+
+func (m *MockTokenSvc) SaveOAuthState(ctx context.Context, state string, ttlSeconds int64) error {
+	args := m.Called(ctx, state, ttlSeconds)
+	return args.Error(0)
+}
+
+func (m *MockTokenSvc) ValidateOAuthState(ctx context.Context, state string) (bool, error) {
+	args := m.Called(ctx, state)
+	return args.Bool(0), args.Error(1)
+}
+
+// newTestUploadService creates an UploadService with all mocks
+func newTestUploadService(mediaRepo *MockMediaRepository, sessionRepo *MockSessionRepository, ytClient *MockYouTubeClient) UploadService {
+	return NewUploadService(mediaRepo, sessionRepo, new(MockTokenRepo), new(MockTokenSvc), ytClient)
+}
+
 // --- Tests ---
 
 func TestInitiateUploadSession(t *testing.T) {
@@ -156,7 +224,7 @@ func TestInitiateUploadSession(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	userID := uuid.New()
 
@@ -180,7 +248,7 @@ func TestInitiateUploadSession_RepoError(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	mockSessionRepo.On("Create", ctx, mock.AnythingOfType("*domain.UploadSession")).
 		Return(fmt.Errorf("database error"))
@@ -197,7 +265,7 @@ func TestUploadVideo_Success(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	userID := uuid.New()
@@ -259,7 +327,7 @@ func TestUploadVideo_SessionNotActive(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	session := &domain.UploadSession{
@@ -289,7 +357,7 @@ func TestUploadVideo_SessionNotFound(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	req := &UploadVideoRequest{
@@ -312,7 +380,7 @@ func TestUploadVideo_YouTubeUploadFails(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	session := &domain.UploadSession{
@@ -348,7 +416,7 @@ func TestCompleteUploadSession(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	session := &domain.UploadSession{
@@ -372,7 +440,7 @@ func TestCompleteUploadSession_NotFound(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	mockSessionRepo.On("FindByID", ctx, sessionID.String()).
@@ -390,7 +458,7 @@ func TestCancelUploadSession(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	session := &domain.UploadSession{
@@ -413,7 +481,7 @@ func TestGetUploadSessionStatus(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	userID := uuid.New()
@@ -448,7 +516,7 @@ func TestGetUploadSessionStatus_NotFound(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	sessionID := uuid.New()
 	mockSessionRepo.On("FindByID", ctx, sessionID.String()).
@@ -465,7 +533,7 @@ func TestListMediaAssets(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	userID := uuid.New()
 	assets := []domain.MediaAsset{
@@ -511,7 +579,7 @@ func TestListMediaAssets_DefaultValues(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	userID := uuid.New()
 
@@ -537,7 +605,7 @@ func TestListMediaAssets_LimitCapped(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	userID := uuid.New()
 
@@ -562,7 +630,7 @@ func TestGetMediaAsset(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	assetID := uuid.New()
 	videoID := "test-video-id"
@@ -588,7 +656,7 @@ func TestGetMediaAsset_NotFound(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	assetID := uuid.New()
 	mockMediaRepo.On("FindByID", ctx, assetID.String()).
@@ -606,7 +674,7 @@ func TestDeleteMediaAsset(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	assetID := uuid.New()
 	videoID := "test-video-id"
@@ -632,7 +700,7 @@ func TestDeleteMediaAsset_NotFound(t *testing.T) {
 	mockSessionRepo := new(MockSessionRepository)
 	mockYouTube := new(MockYouTubeClient)
 
-	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
 
 	assetID := uuid.New()
 	mockMediaRepo.On("FindByID", ctx, assetID.String()).

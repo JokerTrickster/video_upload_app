@@ -10,8 +10,11 @@ import 'features/queue/data/queue_repository.dart';
 import 'features/queue/presentation/queue_provider.dart';
 import 'features/upload/data/upload_repository.dart';
 import 'features/upload/presentation/upload_provider.dart';
+import 'core/notifications/notification_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
   runApp(const MyApp());
 }
 
@@ -50,6 +53,14 @@ class MyApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+        ),
+        themeMode: ThemeMode.system,
         routerConfig: AppRouter.router,
       ),
     );
