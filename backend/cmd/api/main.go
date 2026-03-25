@@ -67,6 +67,7 @@ func main() {
 	tokenRepo := repository.NewTokenRepository(db)
 	mediaRepo := repository.NewMediaRepository(db)
 	sessionRepo := repository.NewSessionRepository(db)
+	queueRepo := repository.NewQueueRepository(db)
 	logger.Info("Repositories initialized")
 
 	// Initialize services
@@ -77,15 +78,22 @@ func main() {
 	// Initialize YouTube client for upload service
 	youtubeClient := youtube.NewClient()
 	uploadService := service.NewUploadService(mediaRepo, sessionRepo, youtubeClient)
+	queueService := service.NewQueueService(queueRepo, mediaRepo, tokenRepo, tokenService, youtubeClient)
 	logger.Info("Services initialized")
 
 	// Initialize handlers
 	authHandler := handler.NewAuthHandler(authService)
 	mediaHandler := handler.NewMediaHandler(uploadService, tokenService, tokenRepo)
+	queueHandler := handler.NewQueueHandler(queueService)
 	logger.Info("Handlers initialized")
 
+	// Start upload queue scheduler (processes every hour)
+	scheduler := service.NewScheduler(queueService, 1*time.Hour)
+	scheduler.Start()
+	defer scheduler.Stop()
+
 	// Setup router
-	r := router.SetupRouter(cfg, authHandler, mediaHandler, authService, redisClient)
+	r := router.SetupRouter(cfg, authHandler, mediaHandler, queueHandler, authService, redisClient)
 	logger.Info("Router configured")
 
 	// Create HTTP server

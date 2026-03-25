@@ -15,6 +15,7 @@ func SetupRouter(
 	cfg *config.Config,
 	authHandler *handler.AuthHandler,
 	mediaHandler *handler.MediaHandler,
+	queueHandler *handler.QueueHandler,
 	authService service.AuthService,
 	redisClient *redis.Client,
 ) *gin.Engine {
@@ -82,6 +83,15 @@ func SetupRouter(
 				media.GET("/list", mediaHandler.ListMediaAssets)
 				media.GET("/:asset_id", mediaHandler.GetMediaAsset)
 				media.DELETE("/:asset_id", mediaHandler.DeleteMediaAsset)
+			}
+
+			// Upload queue routes (auto-upload system)
+			queue := protected.Group("/queue")
+			{
+				queue.POST("/add", queueHandler.AddToQueue)
+				queue.GET("", queueHandler.GetQueue)
+				queue.DELETE("/:queue_id", queueHandler.RemoveFromQueue)
+				queue.GET("/quota", queueHandler.GetQuotaStatus)
 			}
 		}
 	}
