@@ -6,6 +6,8 @@ import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/auth_provider.dart';
 import 'features/media/data/media_repository.dart';
 import 'features/media/presentation/media_provider.dart';
+import 'features/queue/data/queue_repository.dart';
+import 'features/queue/presentation/queue_provider.dart';
 import 'features/upload/data/upload_repository.dart';
 import 'features/upload/presentation/upload_provider.dart';
 
@@ -22,11 +24,15 @@ class MyApp extends StatelessWidget {
     final authRepository = AuthRepository(apiClient);
     final mediaRepository = MediaRepository(apiClient);
     final uploadRepository = UploadRepository(apiClient);
+    final queueRepository = QueueRepository(apiClient);
 
     return MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: apiClient),
         Provider<UploadRepository>.value(value: uploadRepository),
+        ChangeNotifierProvider(
+          create: (_) => QueueProvider(queueRepository),
+        ),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authRepository, apiClient),
         ),

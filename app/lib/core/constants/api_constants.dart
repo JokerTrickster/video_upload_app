@@ -16,4 +16,10 @@ class ApiConstants {
   static const String mediaUploadCancel = '/media/upload/cancel';
   static const String mediaList = '/media/list';
   static const String mediaDetail = '/media'; // + /:asset_id
+
+  // Queue endpoints (auto-upload system)
+  static const String queueAdd = '/queue/add';
+  static const String queueList = '/queue';
+  static const String queueRemove = '/queue'; // + /:queue_id
+  static const String queueQuota = '/queue/quota';
 }

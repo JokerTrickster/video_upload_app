@@ -145,10 +145,22 @@ class _MediaListScreenState extends State<MediaListScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.go('/upload'),
-        icon: Icon(Icons.upload, size: r.iconMedium),
-        label: Text('Upload', style: TextStyle(fontSize: r.bodyMedium)),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton.small(
+            heroTag: 'queue',
+            onPressed: () => context.go('/queue'),
+            child: Icon(Icons.queue, size: r.iconSmall),
+          ),
+          SizedBox(height: r.h(8)),
+          FloatingActionButton.extended(
+            heroTag: 'upload',
+            onPressed: () => context.go('/upload'),
+            icon: Icon(Icons.upload, size: r.iconMedium),
+            label: Text('Upload', style: TextStyle(fontSize: r.bodyMedium)),
+          ),
+        ],
       ),
     );
   }
