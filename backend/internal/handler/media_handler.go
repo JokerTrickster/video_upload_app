@@ -360,6 +360,44 @@ func (h *MediaHandler) CompleteUploadSession(c *gin.Context) {
 	})
 }
 
+// CancelUploadSession handles POST /api/v1/media/upload/cancel
+func (h *MediaHandler) CancelUploadSession(c *gin.Context) {
+	var req struct {
+		SessionID string `json:"session_id" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "INVALID_REQUEST",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	sessionID, err := uuid.Parse(req.SessionID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, ErrorResponse{
+			Error:   "INVALID_SESSION_ID",
+			Message: "Invalid session ID",
+		})
+		return
+	}
+
+	err = h.uploadService.CancelUploadSession(c.Request.Context(), sessionID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{
+			Error:   "SESSION_CANCEL_FAILED",
+			Message: err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, SuccessResponse{
+		Success: true,
+		Message: "Upload session cancelled successfully",
+	})
+}
+
 // ListMediaAssets handles GET /api/v1/media/list
 func (h *MediaHandler) ListMediaAssets(c *gin.Context) {
 	// Get user ID from context

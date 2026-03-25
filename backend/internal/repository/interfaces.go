@@ -50,8 +50,8 @@ type MediaRepository interface {
 	// FindByID retrieves a media asset by ID
 	FindByID(ctx context.Context, assetID string) (*domain.MediaAsset, error)
 
-	// FindByUserID retrieves media assets for a user with pagination
-	FindByUserID(ctx context.Context, userID string, limit, offset int) ([]domain.MediaAsset, int64, error)
+	// FindByUserID retrieves media assets for a user with pagination, filtering, and sorting
+	FindByUserID(ctx context.Context, userID string, limit, offset int, mediaType, syncStatus, sort string) ([]domain.MediaAsset, int64, error)
 
 	// FindPendingUploads retrieves all pending uploads for a user
 	FindPendingUploads(ctx context.Context, userID string) ([]domain.MediaAsset, error)

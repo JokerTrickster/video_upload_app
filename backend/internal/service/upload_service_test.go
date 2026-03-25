@@ -36,8 +36,8 @@ func (m *MockMediaRepository) FindByID(ctx context.Context, assetID string) (*do
 	return args.Get(0).(*domain.MediaAsset), args.Error(1)
 }
 
-func (m *MockMediaRepository) FindByUserID(ctx context.Context, userID string, limit, offset int) ([]domain.MediaAsset, int64, error) {
-	args := m.Called(ctx, userID, limit, offset)
+func (m *MockMediaRepository) FindByUserID(ctx context.Context, userID string, limit, offset int, mediaType, syncStatus, sort string) ([]domain.MediaAsset, int64, error) {
+	args := m.Called(ctx, userID, limit, offset, mediaType, syncStatus, sort)
 	if args.Get(0) == nil {
 		return nil, 0, args.Error(2)
 	}
@@ -490,7 +490,7 @@ func TestListMediaAssets(t *testing.T) {
 		Limit: 50,
 	}
 
-	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0).Return(assets, int64(2), nil)
+	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0, "", "", "created_at_desc").Return(assets, int64(2), nil)
 
 	result, err := svc.ListMediaAssets(ctx, userID, opts)
 
@@ -521,7 +521,7 @@ func TestListMediaAssets_DefaultValues(t *testing.T) {
 		Limit: 0,
 	}
 
-	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0).
+	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0, "", "", "created_at_desc").
 		Return([]domain.MediaAsset{}, int64(0), nil)
 
 	result, err := svc.ListMediaAssets(ctx, userID, opts)
@@ -547,7 +547,7 @@ func TestListMediaAssets_LimitCapped(t *testing.T) {
 		Limit: 200,
 	}
 
-	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0).
+	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 50, 0, "", "", "created_at_desc").
 		Return([]domain.MediaAsset{}, int64(0), nil)
 
 	result, err := svc.ListMediaAssets(ctx, userID, opts)

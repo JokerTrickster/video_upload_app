@@ -76,6 +76,7 @@ func SetupRouter(
 				media.POST("/upload/video", mediaHandler.UploadVideo)
 				media.GET("/upload/status/:session_id", mediaHandler.GetUploadSessionStatus)
 				media.POST("/upload/complete", mediaHandler.CompleteUploadSession)
+				media.POST("/upload/cancel", mediaHandler.CancelUploadSession)
 
 				// Media asset management
 				media.GET("/list", mediaHandler.ListMediaAssets)

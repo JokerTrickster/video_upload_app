@@ -160,7 +160,7 @@ func (s *uploadService) UploadVideo(ctx context.Context, req *UploadVideoRequest
 		return nil, fmt.Errorf("failed to create media asset: %w", err)
 	}
 
-	// Upload to YouTube
+	// Upload to YouTube with retry logic
 	uploadReq := &youtube.UploadVideoRequest{
 		FilePath:      req.FilePath,
 		Title:         req.Title,
@@ -169,12 +169,41 @@ func (s *uploadService) UploadVideo(ctx context.Context, req *UploadVideoRequest
 		OnProgress:    req.OnProgress,
 	}
 
-	uploadResp, err := s.youtubeClient.UploadVideo(ctx, req.AccessToken, uploadReq)
-	if err != nil {
-		// Update asset status to FAILED
+	var uploadResp *youtube.UploadVideoResponse
+	var lastErr error
+	for attempt := 1; attempt <= domain.MaxRetryAttempts; attempt++ {
+		uploadResp, lastErr = s.youtubeClient.UploadVideo(ctx, req.AccessToken, uploadReq)
+		if lastErr == nil {
+			break
+		}
+
+		// Check if error is retryable
+		if !domain.ShouldRetry(lastErr) || attempt == domain.MaxRetryAttempts {
+			break
+		}
+
+		// Update retry count on asset
+		asset.RetryCount = attempt
+		errMsg := lastErr.Error()
+		asset.ErrorMessage = &errMsg
+		_ = s.mediaRepo.Update(ctx, asset)
+
+		// Wait before retry (exponential backoff)
+		delay := time.Duration(domain.GetRetryDelay(attempt)) * time.Second
+		select {
+		case <-ctx.Done():
+			lastErr = ctx.Err()
+			break
+		case <-time.After(delay):
+			// continue retry
+		}
+	}
+
+	if lastErr != nil {
+		// All retries exhausted or non-retryable error
 		asset.SyncStatus = "FAILED"
 		asset.RetryCount++
-		errMsg := err.Error()
+		errMsg := lastErr.Error()
 		asset.ErrorMessage = &errMsg
 
 		_ = s.mediaRepo.Update(ctx, asset)
@@ -183,7 +212,7 @@ func (s *uploadService) UploadVideo(ctx context.Context, req *UploadVideoRequest
 		session.FailedFiles++
 		_ = s.sessionRepo.Update(ctx, session)
 
-		return nil, fmt.Errorf("failed to upload video to YouTube: %w", err)
+		return nil, fmt.Errorf("failed to upload video to YouTube: %w", lastErr)
 	}
 
 	// Verify video is playable
@@ -305,8 +334,8 @@ func (s *uploadService) ListMediaAssets(ctx context.Context, userID uuid.UUID, o
 	// Calculate offset
 	offset := (opts.Page - 1) * opts.Limit
 
-	// List assets (FindByUserID returns both assets and total count)
-	assetsSlice, total, err := s.mediaRepo.FindByUserID(ctx, userID.String(), opts.Limit, offset)
+	// List assets with filters
+	assetsSlice, total, err := s.mediaRepo.FindByUserID(ctx, userID.String(), opts.Limit, offset, opts.MediaType, opts.SyncStatus, opts.Sort)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list media assets: %w", err)
 	}
@@ -316,9 +345,6 @@ func (s *uploadService) ListMediaAssets(ctx context.Context, userID uuid.UUID, o
 	for i := range assetsSlice {
 		assets[i] = &assetsSlice[i]
 	}
-
-	// TODO: Apply client-side filtering for MediaType, SyncStatus, and Sort if needed
-	// The current repository interface doesn't support these filters
 
 	// Calculate total pages
 	totalPages := int(total) / opts.Limit

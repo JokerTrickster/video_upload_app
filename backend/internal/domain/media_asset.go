@@ -41,6 +41,7 @@ type MediaAsset struct {
 	RetryCount        int        `json:"retry_count" gorm:"not null;default:0"`
 	CreatedAt         time.Time  `json:"created_at" gorm:"not null;default:now()"`
 	UpdatedAt         time.Time  `json:"updated_at" gorm:"not null;default:now()"`
+	DeletedAt         *time.Time `json:"deleted_at,omitempty" gorm:"index"`
 }
 
 // TableName specifies the table name for GORM

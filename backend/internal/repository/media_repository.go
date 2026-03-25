@@ -51,8 +51,8 @@ func (r *mediaRepository) FindByID(ctx context.Context, assetID string) (*domain
 	return &asset, nil
 }
 
-// FindByUserID retrieves media assets for a user with pagination
-func (r *mediaRepository) FindByUserID(ctx context.Context, userID string, limit, offset int) ([]domain.MediaAsset, int64, error) {
+// FindByUserID retrieves media assets for a user with pagination, filtering, and sorting
+func (r *mediaRepository) FindByUserID(ctx context.Context, userID string, limit, offset int, mediaType, syncStatus, sort string) ([]domain.MediaAsset, int64, error) {
 	id, err := uuid.Parse(userID)
 	if err != nil {
 		return nil, 0, domain.ErrInvalidInput
@@ -61,18 +61,44 @@ func (r *mediaRepository) FindByUserID(ctx context.Context, userID string, limit
 	var assets []domain.MediaAsset
 	var total int64
 
-	// Get total count
-	if err := r.db.WithContext(ctx).
-		Model(&domain.MediaAsset{}).
-		Where("user_id = ?", id).
-		Count(&total).Error; err != nil {
+	// Build base query with filters
+	query := r.db.WithContext(ctx).Model(&domain.MediaAsset{}).Where("user_id = ?", id)
+	if mediaType != "" {
+		query = query.Where("media_type = ?", mediaType)
+	}
+	if syncStatus != "" {
+		query = query.Where("sync_status = ?", syncStatus)
+	}
+
+	// Get total count with filters
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, err
+	}
+
+	// Determine sort order
+	orderClause := "created_at DESC"
+	switch sort {
+	case "created_at_asc":
+		orderClause = "created_at ASC"
+	case "size_desc":
+		orderClause = "file_size_bytes DESC"
+	case "created_at_desc":
+		orderClause = "created_at DESC"
 	}
 
 	// Get paginated results
 	if err := r.db.WithContext(ctx).
 		Where("user_id = ?", id).
-		Order("created_at DESC").
+		Scopes(func(db *gorm.DB) *gorm.DB {
+			if mediaType != "" {
+				db = db.Where("media_type = ?", mediaType)
+			}
+			if syncStatus != "" {
+				db = db.Where("sync_status = ?", syncStatus)
+			}
+			return db
+		}).
+		Order(orderClause).
 		Limit(limit).
 		Offset(offset).
 		Find(&assets).Error; err != nil {

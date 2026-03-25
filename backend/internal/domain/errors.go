@@ -66,20 +66,20 @@ const (
 	ErrorCodeVerificationFailed = "SYNC_001"
 )
 
-// Retry configuration
+// Retry configuration (exponential backoff: 1s → 30s)
 const (
 	// MaxRetryAttempts is the maximum number of retry attempts
 	MaxRetryAttempts = 5
 
-	// Retry delays (exponential backoff)
-	RetryDelay1 = 1 * 60        // 1 minute
-	RetryDelay2 = 5 * 60        // 5 minutes
-	RetryDelay3 = 15 * 60       // 15 minutes
-	RetryDelay4 = 60 * 60       // 1 hour
-	RetryDelay5 = 24 * 60 * 60  // 24 hours
+	// Retry delays in seconds (exponential backoff)
+	RetryDelay1 = 1   // 1 second
+	RetryDelay2 = 2   // 2 seconds
+	RetryDelay3 = 5   // 5 seconds
+	RetryDelay4 = 15  // 15 seconds
+	RetryDelay5 = 30  // 30 seconds
 )
 
-// GetRetryDelay returns the retry delay for a given attempt number
+// GetRetryDelay returns the retry delay in seconds for a given attempt number
 func GetRetryDelay(attempt int) int {
 	switch attempt {
 	case 1:

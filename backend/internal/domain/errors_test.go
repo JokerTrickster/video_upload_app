@@ -136,9 +136,9 @@ func TestErrorConstants(t *testing.T) {
 
 func TestRetryConstants(t *testing.T) {
 	assert.Equal(t, 5, MaxRetryAttempts, "MaxRetryAttempts should be 5")
-	assert.Equal(t, 60, RetryDelay1, "RetryDelay1 should be 1 minute")
-	assert.Equal(t, 300, RetryDelay2, "RetryDelay2 should be 5 minutes")
-	assert.Equal(t, 900, RetryDelay3, "RetryDelay3 should be 15 minutes")
-	assert.Equal(t, 3600, RetryDelay4, "RetryDelay4 should be 1 hour")
-	assert.Equal(t, 86400, RetryDelay5, "RetryDelay5 should be 24 hours")
+	assert.Equal(t, 1, RetryDelay1, "RetryDelay1 should be 1 second")
+	assert.Equal(t, 2, RetryDelay2, "RetryDelay2 should be 2 seconds")
+	assert.Equal(t, 5, RetryDelay3, "RetryDelay3 should be 5 seconds")
+	assert.Equal(t, 15, RetryDelay4, "RetryDelay4 should be 15 seconds")
+	assert.Equal(t, 30, RetryDelay5, "RetryDelay5 should be 30 seconds")
 }

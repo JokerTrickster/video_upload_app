@@ -4,10 +4,10 @@
   "primaryFeature": "media-backup-system",
   "features": {
     "media-backup-system": {
-      "phase": "do",
+      "phase": "check",
       "status": "active",
-      "matchRate": null,
-      "iterationCount": 0,
+      "matchRate": 93,
+      "iterationCount": 1,
       "startedAt": "2026-03-25T09:51:00Z",
       "completedAt": null,
       "documents": {
