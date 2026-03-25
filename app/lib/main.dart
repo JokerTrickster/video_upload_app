@@ -11,10 +11,13 @@ import 'features/queue/presentation/queue_provider.dart';
 import 'features/upload/data/upload_repository.dart';
 import 'features/upload/presentation/upload_provider.dart';
 import 'core/notifications/notification_service.dart';
+import 'core/storage/settings_storage.dart';
+import 'shared/widgets/upload_progress_banner.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
+  await SettingsStorage.instance.init();
   runApp(const MyApp());
 }
 
@@ -62,6 +65,14 @@ class MyApp extends StatelessWidget {
         ),
         themeMode: ThemeMode.system,
         routerConfig: AppRouter.router,
+        builder: (context, child) {
+          return Column(
+            children: [
+              Expanded(child: child ?? const SizedBox.shrink()),
+              const UploadProgressBanner(),
+            ],
+          );
+        },
       ),
     );
   }

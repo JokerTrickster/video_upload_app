@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import '../../../core/storage/settings_storage.dart';
 import '../../../core/utils/responsive.dart';
+import '../../queue/presentation/queue_provider.dart';
 import 'upload_provider.dart';
 
 class UploadScreen extends StatelessWidget {
@@ -13,7 +15,31 @@ class UploadScreen extends StatelessWidget {
     final picker = ImagePicker();
     final videos = await picker.pickMultipleMedia();
 
-    if (videos.isNotEmpty) {
+    if (videos.isEmpty || !context.mounted) return;
+
+    final isAutoUpload = SettingsStorage.instance.isAutoUploadEnabled;
+
+    if (isAutoUpload) {
+      final queueProvider = context.read<QueueProvider>();
+      var addedCount = 0;
+      for (final video in videos) {
+        final file = File(video.path);
+        final stat = await file.stat();
+        try {
+          await queueProvider.addToQueue(
+            filePath: video.path,
+            filename: video.name,
+            fileSizeBytes: stat.size,
+          );
+          addedCount++;
+        } catch (_) {}
+      }
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('$addedCount file(s) added to queue')),
+        );
+      }
+    } else {
       final uploadFiles = <UploadFile>[];
       for (final video in videos) {
         final file = File(video.path);

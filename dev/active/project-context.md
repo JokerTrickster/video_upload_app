@@ -1,8 +1,8 @@
 # Video Upload App - Project Context
 
-**Last Updated**: 2026-03-25
-**Status**: MVP Complete (Backend + Flutter App)
-**No uncommitted changes** — all work pushed to `origin/main`
+**Last Updated**: 2026-03-25T08:28:00Z
+**Status**: MVP Complete + Auto-Toggle Feature (Backend + Flutter App)
+**Uncommitted**: 7 Flutter files (auto/manual upload toggle + global progress banner)
 
 ---
 
@@ -24,9 +24,9 @@ video_upload_app/
 │   └── Dockerfile
 ├── app/              # Flutter 3.27.4 (iOS + Android)
 │   └── lib/
-│       ├── core/         # ApiClient (Dio + JWT auto-inject), router, responsive util
-│       ├── features/     # auth, media, upload, queue (data + presentation)
-│       └── shared/       # models, widgets (LoadingOverlay, error_snackbar)
+│       ├── core/         # ApiClient, router, responsive util, SettingsStorage
+│       ├── features/     # auth, media, upload, queue, settings (data + presentation)
+│       └── shared/       # models, widgets (LoadingOverlay, error_snackbar, UploadProgressBanner)
 ├── docker-compose.yml
 └── .env.example
 ```

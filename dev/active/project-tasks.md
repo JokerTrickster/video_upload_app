@@ -1,6 +1,6 @@
 # Video Upload App - Task Tracker
 
-**Last Updated**: 2026-03-25
+**Last Updated**: 2026-03-25T08:28:00Z
 
 ## Completed ✅
 
@@ -22,24 +22,28 @@
 ### Flutter App
 - ✅ Project init (Flutter 3.27.4, iOS + Android)
 - ✅ Core: ApiClient (Dio, JWT auto-inject, token refresh)
-- ✅ Core: GoRouter (6 routes)
+- ✅ Core: GoRouter (7 routes — added /settings)
 - ✅ Core: Responsive utility (Galaxy S22+ base)
+- ✅ Core: SettingsStorage (SharedPreferences singleton)
 - ✅ Feature: Login screen (Google OAuth via url_launcher)
-- ✅ Feature: Media list (pagination, filter, delete, pull-to-refresh)
+- ✅ Feature: Media list (pagination, filter, delete, pull-to-refresh, progress bar, settings icon)
 - ✅ Feature: Media detail (YouTube link, metadata, delete)
-- ✅ Feature: Upload screen (multi-file picker, progress, cancel)
+- ✅ Feature: Upload screen (multi-file picker, progress, cancel, auto/manual mode)
 - ✅ Feature: Session status screen (progress circle, stats)
 - ✅ Feature: Queue screen (quota dashboard, add/remove, stats)
-- ✅ Shared: LoadingOverlay, error/success snackbar, confirm dialog
+- ✅ Feature: Settings screen (auto-upload toggle, quota display)
+- ✅ Shared: LoadingOverlay, error_snackbar, UploadProgressBanner (global)
 - ✅ Data: 4 models, 4 repositories, 4 providers
 - ✅ Tests: 41 tests all passing
 - ✅ docker-compose.yml (PostgreSQL + Redis + Backend)
+- ✅ Auto/Manual Upload Toggle (gap analysis: 95% match)
+- ✅ Global Upload Progress Banner (all screens)
 
 ## Pending (User to decide)
 
 - ⏳ S3 image upload — waiting for AWS credentials
 - ⏳ Real device integration test — manual (guide provided)
-- ⏳ services/lights deploy.yaml fix — private repo auth issue (separate project)
+- ⏳ Commit auto-toggle feature (7 files, uncommitted)
 
 ## Optional Improvements (Low Priority)
 
@@ -51,3 +55,4 @@
 - ☐ Dark mode
 - ☐ Push notifications
 - ☐ App icon / splash screen
+- ☐ Improve error handling in auto-queue loop (silent catch in upload_screen.dart:36)

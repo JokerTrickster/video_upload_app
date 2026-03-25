@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../core/utils/responsive.dart';
-import '../../../features/auth/presentation/auth_provider.dart';
+import '../../../features/upload/presentation/upload_provider.dart';
 import '../../../shared/models/media_asset_model.dart';
 import 'media_provider.dart';
 
@@ -69,15 +69,32 @@ class _MediaListScreenState extends State<MediaListScreen> {
             ],
           ),
           IconButton(
-            icon: Icon(Icons.logout, size: r.iconMedium),
-            onPressed: () async {
-              await context.read<AuthProvider>().logout();
-              if (context.mounted) context.go('/login');
-            },
+            icon: Icon(Icons.settings, size: r.iconMedium),
+            onPressed: () => context.go('/settings'),
           ),
         ],
       ),
-      body: Consumer<MediaProvider>(
+      body: Column(
+        children: [
+          Consumer<UploadProvider>(
+            builder: (context, upload, _) {
+              if (!upload.isUploading) return const SizedBox.shrink();
+              return Padding(
+                padding: EdgeInsets.symmetric(horizontal: r.horizontalPadding, vertical: r.h(4)),
+                child: Column(
+                  children: [
+                    LinearProgressIndicator(value: upload.overallProgress / 100),
+                    SizedBox(height: r.h(4)),
+                    Text(
+                      'Uploading ${upload.completedCount}/${upload.files.length} (${upload.overallProgress.toStringAsFixed(0)}%)',
+                      style: TextStyle(fontSize: r.bodySmall, color: Colors.grey[600]),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          Expanded(child: Consumer<MediaProvider>(
         builder: (context, media, _) {
           if (media.isLoading && media.assets.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -144,6 +161,8 @@ class _MediaListScreenState extends State<MediaListScreen> {
             ),
           );
         },
+      )),
+        ],
       ),
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,

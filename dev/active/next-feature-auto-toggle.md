@@ -1,7 +1,7 @@
 # Next Feature: Auto/Manual Upload Toggle + Global Progress
 
 **Requested**: 2026-03-25
-**Status**: Not started — to implement in next session
+**Status**: COMPLETE — implemented 2026-03-25, gap analysis 95% match, uncommitted
 
 ## Requirements
 
