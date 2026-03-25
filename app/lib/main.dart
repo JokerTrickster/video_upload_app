@@ -26,6 +26,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider<ApiClient>.value(value: apiClient),
+        Provider<UploadRepository>.value(value: uploadRepository),
         ChangeNotifierProvider(
           create: (_) => AuthProvider(authRepository, apiClient),
         ),

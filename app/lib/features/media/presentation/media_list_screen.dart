@@ -133,7 +133,11 @@ class _MediaListScreenState extends State<MediaListScreen> {
                     ),
                   );
                 }
-                return _MediaCard(asset: media.assets[index]);
+                final asset = media.assets[index];
+                return GestureDetector(
+                  onTap: () => context.go('/media/${asset.assetId}'),
+                  child: _MediaCard(asset: asset),
+                );
               },
             ),
           );
