@@ -42,6 +42,25 @@ class MediaDetailScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Thumbnail hero
+                if (asset.effectiveThumbnailUrl != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: AspectRatio(
+                      aspectRatio: 16 / 9,
+                      child: Image.network(
+                        asset.effectiveThumbnailUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.video_file, size: 64, color: Colors.grey),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 // Status card
                 _StatusCard(asset: asset),
                 const SizedBox(height: 16),

@@ -31,6 +31,7 @@ class _QueueScreenState extends State<QueueScreen> {
     if (videos.isNotEmpty && mounted) {
       final provider = context.read<QueueProvider>();
       int added = 0;
+      int failed = 0;
       for (final video in videos) {
         final file = File(video.path);
         final stat = await file.stat();
@@ -41,10 +42,17 @@ class _QueueScreenState extends State<QueueScreen> {
             fileSizeBytes: stat.size,
           );
           added++;
-        } catch (_) {}
+        } catch (e) {
+          failed++;
+          debugPrint('Failed to add ${video.name} to queue: $e');
+        }
       }
-      if (mounted && added > 0) {
-        showSuccessSnackBar(context, '$added video(s) added to queue');
+      if (mounted) {
+        if (failed > 0) {
+          showErrorSnackBar(context, '$added added, $failed failed to queue');
+        } else if (added > 0) {
+          showSuccessSnackBar(context, '$added video(s) added to queue');
+        }
       }
     }
   }

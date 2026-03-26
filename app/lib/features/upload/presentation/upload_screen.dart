@@ -22,6 +22,7 @@ class UploadScreen extends StatelessWidget {
     if (isAutoUpload) {
       final queueProvider = context.read<QueueProvider>();
       var addedCount = 0;
+      var failedCount = 0;
       for (final video in videos) {
         final file = File(video.path);
         final stat = await file.stat();
@@ -32,11 +33,20 @@ class UploadScreen extends StatelessWidget {
             fileSizeBytes: stat.size,
           );
           addedCount++;
-        } catch (_) {}
+        } catch (e) {
+          failedCount++;
+          debugPrint('Failed to add ${video.name} to queue: $e');
+        }
       }
       if (context.mounted) {
+        final message = failedCount > 0
+            ? '$addedCount added, $failedCount failed to queue'
+            : '$addedCount file(s) added to queue';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('$addedCount file(s) added to queue')),
+          SnackBar(
+            content: Text(message),
+            backgroundColor: failedCount > 0 ? Colors.orange : null,
+          ),
         );
       }
     } else {

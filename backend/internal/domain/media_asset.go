@@ -31,6 +31,7 @@ type MediaAsset struct {
 	UserID            uuid.UUID  `json:"user_id" gorm:"type:uuid;not null;index"`
 	YouTubeVideoID    *string    `json:"youtube_video_id,omitempty" gorm:"type:varchar(255);uniqueIndex"`
 	S3ObjectKey       *string    `json:"s3_object_key,omitempty" gorm:"type:varchar(512)"`
+	ThumbnailURL      *string    `json:"thumbnail_url,omitempty" gorm:"type:varchar(1024)"`
 	OriginalFilename  string     `json:"original_filename" gorm:"type:varchar(512);not null"`
 	FileSizeBytes     int64      `json:"file_size_bytes" gorm:"not null"`
 	MediaType         MediaType  `json:"media_type" gorm:"type:varchar(10);not null"`

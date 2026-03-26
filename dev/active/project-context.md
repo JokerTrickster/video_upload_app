@@ -1,8 +1,8 @@
 # Video Upload App - Project Context
 
-**Last Updated**: 2026-03-25T08:28:00Z
+**Last Updated**: 2026-03-25T14:17:01Z
 **Status**: MVP Complete + Auto-Toggle Feature (Backend + Flutter App)
-**Uncommitted**: 7 Flutter files (auto/manual upload toggle + global progress banner)
+**No uncommitted changes** — all pushed to `origin/main` (commit `4d6abba`)
 
 ---
 
@@ -72,7 +72,7 @@ video_upload_app/
 
 7. **Flutter responsive**: Galaxy S22+ (412x915 dp) as design reference. All sizes use proportional scaling with clamp() for edge cases.
 
-8. **Flutter SDK location**: ~/development/flutter/bin (added to ~/.zshrc)
+8. **Flutter SDK location**: `~/development/flutter/bin` (added to ~/.zshrc) OR fvm at `~/fvm/versions/3.24.0/bin/`
 
 ## Test Coverage
 

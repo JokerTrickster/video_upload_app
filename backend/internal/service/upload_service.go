@@ -237,8 +237,11 @@ func (s *uploadService) UploadVideo(ctx context.Context, req *UploadVideoRequest
 		asset.SyncStatus = "COMPLETED"
 	}
 
-	// Update asset with YouTube video ID and completed status
+	// Update asset with YouTube video ID, thumbnail, and completed status
 	asset.YouTubeVideoID = &uploadResp.VideoID
+	if uploadResp.ThumbnailURL != "" {
+		asset.ThumbnailURL = &uploadResp.ThumbnailURL
+	}
 	completedAt := time.Now()
 	asset.UploadCompletedAt = &completedAt
 

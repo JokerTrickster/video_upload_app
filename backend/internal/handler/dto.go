@@ -117,6 +117,7 @@ type MediaAssetResponse struct {
 	AssetID           string     `json:"asset_id"`
 	YouTubeVideoID    *string    `json:"youtube_video_id,omitempty"`
 	S3ObjectKey       *string    `json:"s3_object_key,omitempty"`
+	ThumbnailURL      *string    `json:"thumbnail_url,omitempty"`
 	OriginalFilename  string     `json:"original_filename"`
 	FileSizeBytes     int64      `json:"file_size_bytes"`
 	MediaType         string     `json:"media_type"`

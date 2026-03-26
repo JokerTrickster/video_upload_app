@@ -711,3 +711,391 @@ func TestDeleteMediaAsset_NotFound(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "media asset not found")
 }
+
+// --- Delete with YouTube ---
+
+func TestDeleteMediaAsset_WithYouTubeDelete(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+	mockTokenRepo := new(MockTokenRepo)
+	mockTokenSvc := new(MockTokenSvc)
+
+	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockTokenRepo, mockTokenSvc, mockYouTube)
+
+	assetID := uuid.New()
+	userID := uuid.New()
+	videoID := "yt-video-123"
+	asset := &domain.MediaAsset{
+		AssetID:        assetID,
+		UserID:         userID,
+		YouTubeVideoID: &videoID,
+		SyncStatus:     "COMPLETED",
+	}
+
+	token := &domain.Token{
+		UserID:               userID,
+		EncryptedAccessToken: "encrypted-token",
+		ExpiresAt:            time.Now().Add(1 * time.Hour),
+	}
+
+	mockMediaRepo.On("FindByID", ctx, assetID.String()).Return(asset, nil)
+	mockTokenRepo.On("FindByUserID", ctx, userID.String()).Return(token, nil)
+	mockTokenSvc.On("DecryptToken", ctx, "encrypted-token").Return("decrypted-token", nil)
+	mockYouTube.On("DeleteVideo", ctx, "decrypted-token", videoID).Return(nil)
+	mockMediaRepo.On("Delete", ctx, assetID.String()).Return(nil)
+
+	err := svc.DeleteMediaAsset(ctx, assetID, true)
+
+	require.NoError(t, err)
+	mockYouTube.AssertCalled(t, "DeleteVideo", ctx, "decrypted-token", videoID)
+	mockMediaRepo.AssertExpectations(t)
+}
+
+func TestDeleteMediaAsset_WithYouTubeDelete_NoVideoID(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	assetID := uuid.New()
+	asset := &domain.MediaAsset{
+		AssetID:        assetID,
+		YouTubeVideoID: nil, // No video ID
+		SyncStatus:     "FAILED",
+	}
+
+	mockMediaRepo.On("FindByID", ctx, assetID.String()).Return(asset, nil)
+	mockMediaRepo.On("Delete", ctx, assetID.String()).Return(nil)
+
+	err := svc.DeleteMediaAsset(ctx, assetID, true)
+
+	require.NoError(t, err)
+	// YouTube delete should not be called
+	mockYouTube.AssertNotCalled(t, "DeleteVideo")
+}
+
+func TestDeleteMediaAsset_WithYouTubeDelete_EmptyVideoID(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	assetID := uuid.New()
+	emptyID := ""
+	asset := &domain.MediaAsset{
+		AssetID:        assetID,
+		YouTubeVideoID: &emptyID,
+		SyncStatus:     "COMPLETED",
+	}
+
+	mockMediaRepo.On("FindByID", ctx, assetID.String()).Return(asset, nil)
+	mockMediaRepo.On("Delete", ctx, assetID.String()).Return(nil)
+
+	err := svc.DeleteMediaAsset(ctx, assetID, true)
+
+	require.NoError(t, err)
+	mockYouTube.AssertNotCalled(t, "DeleteVideo")
+}
+
+func TestDeleteMediaAsset_WithYouTubeDelete_ExpiredToken(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+	mockTokenRepo := new(MockTokenRepo)
+	mockTokenSvc := new(MockTokenSvc)
+
+	svc := NewUploadService(mockMediaRepo, mockSessionRepo, mockTokenRepo, mockTokenSvc, mockYouTube)
+
+	assetID := uuid.New()
+	userID := uuid.New()
+	videoID := "yt-video-123"
+	asset := &domain.MediaAsset{
+		AssetID:        assetID,
+		UserID:         userID,
+		YouTubeVideoID: &videoID,
+		SyncStatus:     "COMPLETED",
+	}
+
+	expiredToken := &domain.Token{
+		UserID:    userID,
+		ExpiresAt: time.Now().Add(-1 * time.Hour), // Expired
+	}
+
+	mockMediaRepo.On("FindByID", ctx, assetID.String()).Return(asset, nil)
+	mockTokenRepo.On("FindByUserID", ctx, userID.String()).Return(expiredToken, nil)
+	mockMediaRepo.On("Delete", ctx, assetID.String()).Return(nil)
+
+	err := svc.DeleteMediaAsset(ctx, assetID, true)
+
+	require.NoError(t, err)
+	// YouTube delete not called because token expired
+	mockYouTube.AssertNotCalled(t, "DeleteVideo")
+}
+
+// --- Video Status Verification ---
+
+func TestUploadVideo_VerificationFails(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	session := &domain.UploadSession{SessionID: sessionID, SessionStatus: "ACTIVE"}
+
+	uploadResp := &youtube.UploadVideoResponse{
+		VideoID: "test-vid", Title: "Test", UploadedBytes: 1024,
+	}
+
+	req := &UploadVideoRequest{
+		SessionID: sessionID, UserID: uuid.New(), AccessToken: "token",
+		FilePath: "/tmp/test.mp4", Filename: "test.mp4", FileSizeBytes: 1024,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockMediaRepo.On("Create", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockYouTube.On("UploadVideo", ctx, "token", mock.AnythingOfType("*youtube.UploadVideoRequest")).
+		Return(uploadResp, nil)
+	// Verification fails
+	mockYouTube.On("GetVideoStatus", ctx, "token", "test-vid").
+		Return(nil, fmt.Errorf("verification timeout"))
+	mockMediaRepo.On("Update", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockSessionRepo.On("Update", ctx, mock.AnythingOfType("*domain.UploadSession")).Return(nil)
+
+	result, err := svc.UploadVideo(ctx, req)
+
+	require.NoError(t, err)
+	assert.Equal(t, "COMPLETED", result.SyncStatus)
+}
+
+func TestUploadVideo_VideoNotPlayable(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	session := &domain.UploadSession{SessionID: sessionID, SessionStatus: "ACTIVE"}
+
+	uploadResp := &youtube.UploadVideoResponse{
+		VideoID: "test-vid", Title: "Test", UploadedBytes: 1024,
+	}
+
+	videoStatus := &youtube.VideoStatus{
+		VideoID:  "test-vid",
+		Status:   "processing",
+		Playable: false,
+	}
+
+	req := &UploadVideoRequest{
+		SessionID: sessionID, UserID: uuid.New(), AccessToken: "token",
+		FilePath: "/tmp/test.mp4", Filename: "test.mp4", FileSizeBytes: 1024,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockMediaRepo.On("Create", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockYouTube.On("UploadVideo", ctx, "token", mock.AnythingOfType("*youtube.UploadVideoRequest")).
+		Return(uploadResp, nil)
+	mockYouTube.On("GetVideoStatus", ctx, "token", "test-vid").
+		Return(videoStatus, nil)
+	mockMediaRepo.On("Update", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockSessionRepo.On("Update", ctx, mock.AnythingOfType("*domain.UploadSession")).Return(nil)
+
+	result, err := svc.UploadVideo(ctx, req)
+
+	require.NoError(t, err)
+	assert.Equal(t, "COMPLETED", result.SyncStatus) // Still COMPLETED even if not yet playable
+}
+
+// --- Retry Logic Tests ---
+
+func TestUploadVideo_NonRetryableError(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	session := &domain.UploadSession{SessionID: sessionID, SessionStatus: "ACTIVE"}
+
+	req := &UploadVideoRequest{
+		SessionID: sessionID, UserID: uuid.New(), AccessToken: "token",
+		FilePath: "/tmp/test.mp4", Filename: "test.mp4", FileSizeBytes: 1024,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockMediaRepo.On("Create", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	// Non-retryable error (e.g., file too large)
+	mockYouTube.On("UploadVideo", ctx, "token", mock.AnythingOfType("*youtube.UploadVideoRequest")).
+		Return(nil, domain.ErrFileTooLarge)
+	mockMediaRepo.On("Update", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockSessionRepo.On("Update", ctx, mock.AnythingOfType("*domain.UploadSession")).Return(nil)
+
+	_, err := svc.UploadVideo(ctx, req)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to upload video to YouTube")
+	// Should only be called once (no retry for non-retryable errors)
+	mockYouTube.AssertNumberOfCalls(t, "UploadVideo", 1)
+}
+
+func TestUploadVideo_MediaAssetCreateFails(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	session := &domain.UploadSession{SessionID: sessionID, SessionStatus: "ACTIVE"}
+
+	req := &UploadVideoRequest{
+		SessionID: sessionID, UserID: uuid.New(), AccessToken: "token",
+		FilePath: "/tmp/test.mp4", Filename: "test.mp4", FileSizeBytes: 1024,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockMediaRepo.On("Create", ctx, mock.AnythingOfType("*domain.MediaAsset")).
+		Return(fmt.Errorf("db error"))
+
+	_, err := svc.UploadVideo(ctx, req)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to create media asset")
+}
+
+func TestUploadVideo_SessionUpdateProgress(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	userID := uuid.New()
+	session := &domain.UploadSession{
+		SessionID:      sessionID,
+		UserID:         userID,
+		TotalFiles:     2,
+		CompletedFiles: 0,
+		FailedFiles:    0,
+		TotalBytes:     2048,
+		UploadedBytes:  0,
+		SessionStatus:  "ACTIVE",
+	}
+
+	uploadResp := &youtube.UploadVideoResponse{
+		VideoID: "vid-1", Title: "Test", UploadedBytes: 1024,
+	}
+
+	videoStatus := &youtube.VideoStatus{VideoID: "vid-1", Playable: true, Status: "processed"}
+
+	req := &UploadVideoRequest{
+		SessionID: sessionID, UserID: userID, AccessToken: "token",
+		FilePath: "/tmp/test.mp4", Filename: "test.mp4", FileSizeBytes: 1024,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockMediaRepo.On("Create", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockYouTube.On("UploadVideo", ctx, "token", mock.AnythingOfType("*youtube.UploadVideoRequest")).
+		Return(uploadResp, nil)
+	mockYouTube.On("GetVideoStatus", ctx, "token", "vid-1").Return(videoStatus, nil)
+	mockMediaRepo.On("Update", ctx, mock.AnythingOfType("*domain.MediaAsset")).Return(nil)
+	mockSessionRepo.On("Update", ctx, mock.AnythingOfType("*domain.UploadSession")).Return(nil)
+
+	result, err := svc.UploadVideo(ctx, req)
+
+	require.NoError(t, err)
+	assert.Equal(t, "vid-1", result.VideoID)
+	// Session should be updated: CompletedFiles = 1, UploadedBytes = 1024
+	assert.Equal(t, 1, session.CompletedFiles)
+	assert.Equal(t, int64(1024), session.UploadedBytes)
+}
+
+func TestListMediaAssets_WithFilters(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	userID := uuid.New()
+	opts := &ListMediaOptions{
+		Page:       1,
+		Limit:      20,
+		MediaType:  "VIDEO",
+		SyncStatus: "COMPLETED",
+		Sort:       "size_desc",
+	}
+
+	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 20, 0, "VIDEO", "COMPLETED", "size_desc").
+		Return([]domain.MediaAsset{}, int64(0), nil)
+
+	result, err := svc.ListMediaAssets(ctx, userID, opts)
+
+	require.NoError(t, err)
+	assert.Empty(t, result.Assets)
+	assert.Equal(t, 0, result.TotalPages)
+}
+
+func TestListMediaAssets_TotalPagesCalculation(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	userID := uuid.New()
+	opts := &ListMediaOptions{Page: 1, Limit: 10}
+
+	// 25 total items / 10 per page = 3 pages (2 full + 1 partial)
+	mockMediaRepo.On("FindByUserID", ctx, userID.String(), 10, 0, "", "", "created_at_desc").
+		Return([]domain.MediaAsset{}, int64(25), nil)
+
+	result, err := svc.ListMediaAssets(ctx, userID, opts)
+
+	require.NoError(t, err)
+	assert.Equal(t, 3, result.TotalPages)
+	assert.Equal(t, int64(25), result.Total)
+}
+
+func TestCancelUploadSession_SessionAlreadyCancelled(t *testing.T) {
+	ctx := context.Background()
+	mockMediaRepo := new(MockMediaRepository)
+	mockSessionRepo := new(MockSessionRepository)
+	mockYouTube := new(MockYouTubeClient)
+
+	svc := newTestUploadService(mockMediaRepo, mockSessionRepo, mockYouTube)
+
+	sessionID := uuid.New()
+	now := time.Now()
+	session := &domain.UploadSession{
+		SessionID:     sessionID,
+		SessionStatus: "CANCELLED",
+		CompletedAt:   &now,
+	}
+
+	mockSessionRepo.On("FindByID", ctx, sessionID.String()).Return(session, nil)
+	mockSessionRepo.On("Update", ctx, mock.AnythingOfType("*domain.UploadSession")).Return(nil)
+
+	// Cancelling an already cancelled session still works (idempotent)
+	err := svc.CancelUploadSession(ctx, sessionID)
+	require.NoError(t, err)
+}

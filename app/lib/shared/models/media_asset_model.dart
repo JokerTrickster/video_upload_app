@@ -2,6 +2,7 @@ class MediaAssetModel {
   final String assetId;
   final String? youtubeVideoId;
   final String? s3ObjectKey;
+  final String? thumbnailUrl;
   final String originalFilename;
   final int fileSizeBytes;
   final String mediaType;
@@ -16,6 +17,7 @@ class MediaAssetModel {
     required this.assetId,
     this.youtubeVideoId,
     this.s3ObjectKey,
+    this.thumbnailUrl,
     required this.originalFilename,
     required this.fileSizeBytes,
     required this.mediaType,
@@ -32,6 +34,7 @@ class MediaAssetModel {
       assetId: json['asset_id'] as String,
       youtubeVideoId: json['youtube_video_id'] as String?,
       s3ObjectKey: json['s3_object_key'] as String?,
+      thumbnailUrl: json['thumbnail_url'] as String?,
       originalFilename: json['original_filename'] as String,
       fileSizeBytes: json['file_size_bytes'] as int,
       mediaType: json['media_type'] as String,
@@ -57,6 +60,14 @@ class MediaAssetModel {
       return '${(fileSizeBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
     }
     return '${(fileSizeBytes / (1024 * 1024 * 1024)).toStringAsFixed(2)} GB';
+  }
+
+  String? get effectiveThumbnailUrl {
+    if (thumbnailUrl != null && thumbnailUrl!.isNotEmpty) return thumbnailUrl;
+    if (youtubeVideoId != null && youtubeVideoId!.isNotEmpty) {
+      return 'https://img.youtube.com/vi/$youtubeVideoId/hqdefault.jpg';
+    }
+    return null;
   }
 
   bool get isCompleted => syncStatus == 'COMPLETED';

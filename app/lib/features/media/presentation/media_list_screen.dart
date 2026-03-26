@@ -203,7 +203,7 @@ class _MediaCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _buildStatusIcon(r),
+            _buildLeading(r),
             SizedBox(width: r.w(12)),
             Expanded(
               child: Column(
@@ -244,6 +244,27 @@ class _MediaCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildLeading(Responsive r) {
+    final url = asset.effectiveThumbnailUrl;
+    final size = r.iconLarge * 1.5;
+
+    if (url != null && asset.isCompleted) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _buildStatusIcon(r),
+          ),
+        ),
+      );
+    }
+    return _buildStatusIcon(r);
   }
 
   Widget _buildStatusIcon(Responsive r) {

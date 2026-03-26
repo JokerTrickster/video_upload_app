@@ -54,6 +54,72 @@ void main() {
     });
   });
 
+  group('MediaAssetModel thumbnailUrl', () {
+    test('parses thumbnail_url from JSON', () {
+      final json = {
+        'asset_id': '1', 'original_filename': 'a.mp4',
+        'file_size_bytes': 100, 'media_type': 'VIDEO',
+        'sync_status': 'COMPLETED', 'created_at': '2026-03-25T10:00:00Z',
+        'retry_count': 0,
+        'thumbnail_url': 'https://img.youtube.com/vi/abc/hqdefault.jpg',
+        'youtube_video_id': 'abc',
+      };
+
+      final asset = MediaAssetModel.fromJson(json);
+      expect(asset.thumbnailUrl, 'https://img.youtube.com/vi/abc/hqdefault.jpg');
+    });
+
+    test('effectiveThumbnailUrl returns thumbnailUrl when present', () {
+      final asset = MediaAssetModel.fromJson({
+        'asset_id': '1', 'original_filename': 'a.mp4',
+        'file_size_bytes': 100, 'media_type': 'VIDEO',
+        'sync_status': 'COMPLETED', 'created_at': '2026-03-25T10:00:00Z',
+        'retry_count': 0,
+        'thumbnail_url': 'https://custom-thumb.jpg',
+        'youtube_video_id': 'xyz',
+      });
+
+      expect(asset.effectiveThumbnailUrl, 'https://custom-thumb.jpg');
+    });
+
+    test('effectiveThumbnailUrl falls back to videoId URL', () {
+      final asset = MediaAssetModel.fromJson({
+        'asset_id': '1', 'original_filename': 'a.mp4',
+        'file_size_bytes': 100, 'media_type': 'VIDEO',
+        'sync_status': 'COMPLETED', 'created_at': '2026-03-25T10:00:00Z',
+        'retry_count': 0,
+        'youtube_video_id': 'myVideoId',
+      });
+
+      expect(asset.effectiveThumbnailUrl,
+          'https://img.youtube.com/vi/myVideoId/hqdefault.jpg');
+    });
+
+    test('effectiveThumbnailUrl returns null when no videoId', () {
+      final asset = MediaAssetModel.fromJson({
+        'asset_id': '1', 'original_filename': 'a.mp4',
+        'file_size_bytes': 100, 'media_type': 'VIDEO',
+        'sync_status': 'PENDING', 'created_at': '2026-03-25T10:00:00Z',
+        'retry_count': 0,
+      });
+
+      expect(asset.effectiveThumbnailUrl, isNull);
+    });
+
+    test('effectiveThumbnailUrl ignores empty strings', () {
+      final asset = MediaAssetModel.fromJson({
+        'asset_id': '1', 'original_filename': 'a.mp4',
+        'file_size_bytes': 100, 'media_type': 'VIDEO',
+        'sync_status': 'COMPLETED', 'created_at': '2026-03-25T10:00:00Z',
+        'retry_count': 0,
+        'thumbnail_url': '',
+        'youtube_video_id': '',
+      });
+
+      expect(asset.effectiveThumbnailUrl, isNull);
+    });
+  });
+
   group('MediaAssetListResponse', () {
     test('parses paginated response', () {
       final json = {

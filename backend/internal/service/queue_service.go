@@ -226,6 +226,9 @@ func (s *queueService) processItem(ctx context.Context, item *domain.UploadQueue
 
 	// Success - update asset
 	asset.YouTubeVideoID = &uploadResp.VideoID
+	if uploadResp.ThumbnailURL != "" {
+		asset.ThumbnailURL = &uploadResp.ThumbnailURL
+	}
 	asset.SyncStatus = "COMPLETED"
 	completedAt := time.Now()
 	asset.UploadCompletedAt = &completedAt
