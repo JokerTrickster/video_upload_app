@@ -15,11 +15,17 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoUpload = false;
+  bool _backgroundUpload = true;
+  bool _wifiOnly = true;
+  bool _chargingOnly = false;
 
   @override
   void initState() {
     super.initState();
     _autoUpload = SettingsStorage.instance.isAutoUploadEnabled;
+    _backgroundUpload = SettingsStorage.instance.isBackgroundUploadEnabled;
+    _wifiOnly = SettingsStorage.instance.isWifiOnly;
+    _chargingOnly = SettingsStorage.instance.isChargingOnly;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<QueueProvider>().refreshQuota();
     });
@@ -54,6 +60,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 await SettingsStorage.instance.setAutoUploadEnabled(value);
                 setState(() => _autoUpload = value);
               },
+            ),
+          ),
+          SizedBox(height: r.h(16)),
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: Text('Background Upload',
+                      style: TextStyle(fontSize: r.bodyLarge)),
+                  subtitle: Text(
+                    'Continue uploads when app is in background',
+                    style: TextStyle(fontSize: r.bodySmall),
+                  ),
+                  secondary:
+                      Icon(Icons.sync_outlined, size: r.iconLarge),
+                  value: _backgroundUpload,
+                  onChanged: (value) async {
+                    await SettingsStorage.instance
+                        .setBackgroundUploadEnabled(value);
+                    setState(() => _backgroundUpload = value);
+                  },
+                ),
+                if (_backgroundUpload) ...[
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: Text('WiFi Only',
+                        style: TextStyle(fontSize: r.bodyLarge)),
+                    subtitle: Text(
+                      'Only upload when connected to WiFi',
+                      style: TextStyle(fontSize: r.bodySmall),
+                    ),
+                    value: _wifiOnly,
+                    onChanged: (value) async {
+                      await SettingsStorage.instance.setWifiOnly(value);
+                      setState(() => _wifiOnly = value);
+                    },
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: Text('Charging Only',
+                        style: TextStyle(fontSize: r.bodyLarge)),
+                    subtitle: Text(
+                      'Only upload when device is charging',
+                      style: TextStyle(fontSize: r.bodySmall),
+                    ),
+                    value: _chargingOnly,
+                    onChanged: (value) async {
+                      await SettingsStorage.instance
+                          .setChargingOnly(value);
+                      setState(() => _chargingOnly = value);
+                    },
+                  ),
+                ],
+              ],
             ),
           ),
           SizedBox(height: r.h(16)),

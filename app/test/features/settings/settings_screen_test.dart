@@ -41,4 +41,66 @@ void main() {
       expect(SettingsStorage.instance.isAutoUploadEnabled, isTrue);
     });
   });
+
+  group('SettingsStorage - Background Upload', () {
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      await SettingsStorage.instance.init();
+    });
+
+    test('background upload enabled by default', () {
+      expect(SettingsStorage.instance.isBackgroundUploadEnabled, isTrue);
+    });
+
+    test('can toggle background upload', () async {
+      await SettingsStorage.instance.setBackgroundUploadEnabled(false);
+      expect(SettingsStorage.instance.isBackgroundUploadEnabled, isFalse);
+
+      await SettingsStorage.instance.setBackgroundUploadEnabled(true);
+      expect(SettingsStorage.instance.isBackgroundUploadEnabled, isTrue);
+    });
+
+    test('wifi only enabled by default', () {
+      expect(SettingsStorage.instance.isWifiOnly, isTrue);
+    });
+
+    test('can toggle wifi only', () async {
+      await SettingsStorage.instance.setWifiOnly(false);
+      expect(SettingsStorage.instance.isWifiOnly, isFalse);
+    });
+
+    test('charging only disabled by default', () {
+      expect(SettingsStorage.instance.isChargingOnly, isFalse);
+    });
+
+    test('can toggle charging only', () async {
+      await SettingsStorage.instance.setChargingOnly(true);
+      expect(SettingsStorage.instance.isChargingOnly, isTrue);
+    });
+
+    test('background settings persist across re-init', () async {
+      await SettingsStorage.instance.setBackgroundUploadEnabled(false);
+      await SettingsStorage.instance.setWifiOnly(false);
+      await SettingsStorage.instance.setChargingOnly(true);
+
+      SharedPreferences.setMockInitialValues({
+        'background_upload_enabled': false,
+        'wifi_only_upload': false,
+        'charging_only_upload': true,
+      });
+      await SettingsStorage.instance.init();
+
+      expect(SettingsStorage.instance.isBackgroundUploadEnabled, isFalse);
+      expect(SettingsStorage.instance.isWifiOnly, isFalse);
+      expect(SettingsStorage.instance.isChargingOnly, isTrue);
+    });
+
+    test('background settings are independent from auto upload', () async {
+      await SettingsStorage.instance.setAutoUploadEnabled(true);
+      await SettingsStorage.instance.setBackgroundUploadEnabled(false);
+
+      expect(SettingsStorage.instance.isAutoUploadEnabled, isTrue);
+      expect(SettingsStorage.instance.isBackgroundUploadEnabled, isFalse);
+    });
+  });
 }

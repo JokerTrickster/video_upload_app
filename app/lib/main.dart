@@ -10,6 +10,7 @@ import 'features/queue/data/queue_repository.dart';
 import 'features/queue/presentation/queue_provider.dart';
 import 'features/upload/data/upload_repository.dart';
 import 'features/upload/presentation/upload_provider.dart';
+import 'core/background/background_upload_service.dart';
 import 'core/notifications/notification_service.dart';
 import 'core/storage/settings_storage.dart';
 import 'shared/widgets/upload_progress_banner.dart';
@@ -18,6 +19,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await NotificationService().init();
   await SettingsStorage.instance.init();
+  await BackgroundUploadService.initialize();
   runApp(const MyApp());
 }
 

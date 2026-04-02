@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart';
+import '../../../core/background/background_upload_service.dart';
+import '../../../core/storage/settings_storage.dart';
+import '../../upload/presentation/upload_provider.dart';
 import '../../../shared/models/queue_model.dart';
 import '../data/queue_repository.dart';
 
@@ -84,5 +87,26 @@ class QueueProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  /// Schedule queue item for background upload with a local file
+  Future<void> scheduleBackgroundUpload({
+    required String queueId,
+    required String filePath,
+    required String filename,
+    required int fileSizeBytes,
+  }) async {
+    if (!SettingsStorage.instance.isBackgroundUploadEnabled) return;
+
+    final backgroundService = BackgroundUploadService();
+    final uploadFile = UploadFile(
+      path: filePath,
+      filename: filename,
+      size: fileSizeBytes,
+    );
+    await backgroundService.scheduleUpload(
+      sessionId: queueId,
+      files: [uploadFile],
+    );
   }
 }
